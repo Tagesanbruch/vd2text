@@ -1,6 +1,8 @@
 import 'package:isar/isar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:dio/dio.dart';
 import '../models/transcription.dart';
+import '../models/app_state.dart';
 import '../services/api_service.dart';
 import '../utils/isar_service.dart';
 
@@ -44,8 +46,14 @@ class TranscriptionRepository {
 
       // 更新同步时间戳
       await prefs.setString('last_sync_timestamp', DateTime.now().toIso8601String());
+    } on DioException catch (e) {
+      throw NetworkException(
+        _getDioErrorMessage(e),
+        code: e.response?.statusCode?.toString(),
+        originalError: e,
+      );
     } catch (e) {
-      throw Exception('Failed to sync with server: $e');
+      throw TranscriptionException('Failed to sync with server: $e');
     }
   }
 
@@ -60,11 +68,23 @@ class TranscriptionRepository {
   Future<TaskInfo> createTranscription({
     required String url,
     bool summarize = false,
+    String? asrEngine,
   }) async {
-    return await _apiService.createTranscription(
-      url: url,
-      summarize: summarize,
-    );
+    try {
+      return await _apiService.createTranscription(
+        url: url,
+        summarize: summarize,
+        asrEngine: asrEngine,
+      );
+    } on DioException catch (e) {
+      throw NetworkException(
+        _getDioErrorMessage(e),
+        code: e.response?.statusCode?.toString(),
+        originalError: e,
+      );
+    } catch (e) {
+      throw TranscriptionException('Failed to create transcription: $e');
+    }
   }
 
   Future<Transcription?> getTranscriptionDetails(String id) async {
@@ -87,13 +107,75 @@ class TranscriptionRepository {
       });
 
       return transcription;
-    } catch (e) {
+    } on DioException catch (e) {
       // 如果网络请求失败，尝试从本地获取
       final isar = await IsarService.isar;
-      return await isar.transcriptions
+      final local = await isar.transcriptions
           .where()
           .remoteIdEqualTo(id)
           .findFirst();
+      
+      if (local != null) {
+        return local; // 返回本地缓存的数据
+      }
+      
+      throw NetworkException(
+        _getDioErrorMessage(e),
+        code: e.response?.statusCode?.toString(),
+        originalError: e,
+      );
+    } catch (e) {
+      // 如果网络请求失败，尝试从本地获取
+      final isar = await IsarService.isar;
+      final local = await isar.transcriptions
+          .where()
+          .remoteIdEqualTo(id)
+          .findFirst();
+      
+      if (local != null) {
+        return local; // 返回本地缓存的数据
+      }
+      
+      throw TranscriptionException('Failed to get transcription details: $e');
+    }
+  }
+
+  String _getDioErrorMessage(DioException e) {
+    switch (e.type) {
+      case DioExceptionType.connectionTimeout:
+        return '连接超时，请检查网络连接';
+      case DioExceptionType.sendTimeout:
+        return '发送请求超时';
+      case DioExceptionType.receiveTimeout:
+        return '接收响应超时';
+      case DioExceptionType.badResponse:
+        final statusCode = e.response?.statusCode;
+        switch (statusCode) {
+          case 400:
+            return '请求参数错误';
+          case 401:
+            return '未授权访问';
+          case 403:
+            return '访问被禁止';
+          case 404:
+            return '请求的资源不存在';
+          case 500:
+            return '服务器内部错误';
+          case 502:
+            return '网关错误';
+          case 503:
+            return '服务不可用';
+          default:
+            return '请求失败 (状态码: $statusCode)';
+        }
+      case DioExceptionType.cancel:
+        return '请求已取消';
+      case DioExceptionType.connectionError:
+        return '网络连接错误，请检查网络设置';
+      case DioExceptionType.unknown:
+        return '未知网络错误';
+      default:
+        return '网络请求失败';
     }
   }
 }

@@ -10,11 +10,13 @@ class ApiService {
   Future<TaskInfo> createTranscription({
     required String url,
     bool summarize = false,
+    String? asrEngine,
   }) async {
     try {
       final transcriptionCreate = TranscriptionCreate(
         url: url,
         summarize: summarize,
+        asrEngine: asrEngine,
       );
 
       final response = await _dioService.dio.post(

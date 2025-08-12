@@ -2072,6 +2072,7 @@ TranscriptionCreate _$TranscriptionCreateFromJson(Map<String, dynamic> json) =>
     TranscriptionCreate(
       url: json['url'] as String,
       summarize: json['summarize'] as bool? ?? false,
+      asrEngine: json['asr_engine'] as String?,
     );
 
 Map<String, dynamic> _$TranscriptionCreateToJson(
@@ -2079,4 +2080,5 @@ Map<String, dynamic> _$TranscriptionCreateToJson(
     <String, dynamic>{
       'url': instance.url,
       'summarize': instance.summarize,
+      'asr_engine': instance.asrEngine,
     };

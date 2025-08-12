@@ -25,6 +25,16 @@ enum SourceType {
   other,
 }
 
+@JsonEnum()
+enum AsrEngine {
+  @JsonValue("whisper")
+  whisper,
+  @JsonValue("gemini")
+  gemini,
+  @JsonValue("funasr")
+  funAsr,
+}
+
 @Collection()
 @JsonSerializable()
 class Transcription {
@@ -86,10 +96,13 @@ class TaskInfo {
 class TranscriptionCreate {
   final String url;
   final bool summarize;
+  @JsonKey(name: 'asr_engine')
+  final String? asrEngine;
 
   TranscriptionCreate({
     required this.url,
     this.summarize = false,
+    this.asrEngine,
   });
 
   factory TranscriptionCreate.fromJson(Map<String, dynamic> json) => _$TranscriptionCreateFromJson(json);
