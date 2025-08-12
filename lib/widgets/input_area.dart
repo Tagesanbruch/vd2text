@@ -288,7 +288,7 @@ class _InputAreaState extends ConsumerState<InputArea> {
                 child: TextField(
                   controller: _urlController,
                   decoration: InputDecoration(
-                    hintText: '输入视频链接 (YouTube, Bilibili 等)',
+                    hintText: '输入视频链接 (YouTube, Bilibili 等) 或 BV号',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(
@@ -442,7 +442,7 @@ class _InputAreaState extends ConsumerState<InputArea> {
 
     // 简单的URL验证
     if (!_isValidUrl(url)) {
-      _showErrorSnackBar('请输入有效的URL');
+      _showErrorSnackBar('请输入有效的URL或BV号');
       return;
     }
 
@@ -539,12 +539,24 @@ class _InputAreaState extends ConsumerState<InputArea> {
   }
 
   bool _isValidUrl(String url) {
+    // 检查是否为BV号
+    if (_isBvNumber(url)) {
+      return true;
+    }
+    
+    // 检查是否为有效URL
     try {
       final uri = Uri.parse(url);
       return uri.hasScheme && (uri.scheme == 'http' || uri.scheme == 'https');
     } catch (e) {
       return false;
     }
+  }
+
+  bool _isBvNumber(String input) {
+    // BV号格式: BV开头，后面跟10位字符（数字和字母）
+    final bvRegex = RegExp(r'^BV[1-9a-km-zA-HJ-NP-Z]{10}$');
+    return bvRegex.hasMatch(input.trim());
   }
 
   void _showErrorSnackBar(String message) {
