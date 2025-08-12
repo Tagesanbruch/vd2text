@@ -1,3 +1,5 @@
+// android/settings.gradle.kts
+
 pluginManagement {
     val flutterSdkPath = run {
         val properties = java.util.Properties()
@@ -10,9 +12,34 @@ pluginManagement {
     includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
 
     repositories {
+        // 1. Flutter 官方镜像源 (最优先)
+        maven("https://storage.flutter-io.cn/download.flutter.io")
+
+        // 2. 阿里云镜像
+        maven("https://maven.aliyun.com/repository/public")
+        maven("https://maven.aliyun.com/repository/google")
+
+        // 3. 官方源（可选，如果代理配置好了可以放开）
         google()
         mavenCentral()
         gradlePluginPortal()
+    }
+}
+
+dependencyResolutionManagement {
+    // 使用这个更灵活的规则来兼容各种插件
+    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
+    repositories {
+        // 1. Flutter 官方镜像源 (最优先)
+        maven("https://storage.flutter-io.cn/download.flutter.io")
+
+        // 2. 阿里云镜像
+        maven("https://maven.aliyun.com/repository/public")
+        maven("https://maven.aliyun.com/repository/google")
+
+        // 3. 官方源（可选，如果代理配置好了可以放开）
+        google()
+        mavenCentral()
     }
 }
 
